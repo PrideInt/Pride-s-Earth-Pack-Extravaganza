@@ -133,6 +133,8 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 		
 		if (target == null) return;
 		
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "RockWrecker", player.getLocation()) || GeneralMethods.isRegionProtectedFromBuild(player, "RockWrecker", target.getLocation())) return;
+		
 		if (CREATE_LAVA) {
 			GeneralMethods.getBlocksAroundPoint(target.getLocation(), 1.425).stream().filter(b -> !isAir(b.getType()) && isEarthbendable(b)).forEach(b -> {
 				Block block = GeneralMethods.getTopBlock(b.getLocation(), 1, 1);
@@ -183,6 +185,13 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 		if (!player.isOnline() || player.isDead() || !bPlayer.canBendIgnoreBindsCooldowns(this)) {
 			remove();
 			return;
+		}
+		
+		if (location != null) {
+			if (GeneralMethods.isRegionProtectedFromBuild(player, "RockWrecker", location)) {
+				remove();
+				return;
+			}
 		}
 		
 		if (player.isSneaking() && !advanced) {
