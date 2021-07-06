@@ -189,7 +189,7 @@ public class SandSurge extends SandAbility implements AddonAbility {
 			Block block = target.getWorld().getBlockAt(target.getLocation().clone().add(orth.clone().multiply(adjustedI)));
 			Block top = GeneralMethods.getTopBlock(block.getLocation(), 3);
 			
-			if (isSandbendable(top)) {
+			if (isSandbendable(top) && !GeneralMethods.isRegionProtectedFromBuild(player, "SandSurge", top.getLocation())) {
 				blocks.accept(top);
 			}
 		}
