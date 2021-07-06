@@ -19,6 +19,7 @@ import com.projectkorra.projectkorra.BendingPlayer;
 import com.projectkorra.projectkorra.Element;
 import com.projectkorra.projectkorra.ProjectKorra;
 import com.projectkorra.projectkorra.ability.CoreAbility;
+import com.projectkorra.projectkorra.ability.EarthAbility;
 
 import me.Pride.abilities.Bulldoze;
 import me.Pride.abilities.MetalStrips;
@@ -68,6 +69,8 @@ public class Loader implements Listener {
 				if (strips == null) return;
 				
 				strips.setMagnetizing(true);
+				strips.setUsage(MetalStrips.Usage.ENTITY);
+				EarthAbility.playMetalbendingSound(player.getLocation());
 			}
 		}
 	}
