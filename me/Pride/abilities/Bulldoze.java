@@ -70,6 +70,8 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		
 		if (target == null) return;
 		
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", player.getLocation())) return;
+		
 		location = target.getLocation();
 		
 		playEarthbendingSound(location);
@@ -122,6 +124,13 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 				return;
 			}
 			
+			if (target != null) {
+				if (GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", target.getLocation())) {
+					remove();
+					return;
+				}
+			}
+			
 			location = target.getLocation();
 			direction = player.getEyeLocation().getDirection();
 			
@@ -144,6 +153,11 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		
 		location.add(direction.normalize().multiply(SPEED));
 		
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", location)) {
+			remove();
+			return;
+		}
+		
 		if (rand.nextInt(4) == 0) {
 			player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5F, 0F);
 			player.getWorld().playSound(location, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5F, 0F);
@@ -151,7 +165,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		
 		List<Block> blocks = GeneralMethods.getBlocksAroundPoint(location, RADIUS);
 		
-		blocks.stream().filter(b -> isEarthbendable(b) || isEarth(b)).forEach(b -> { 
+		blocks.stream().filter(b -> isEarthbendable(b) || isEarth(b) || !GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", b.getLocation())).forEach(b -> { 
 			if (REVERT) { 
 				new TempBlock(b, Material.AIR.createBlockData(), REVERT_TIME);
 			} else { 
