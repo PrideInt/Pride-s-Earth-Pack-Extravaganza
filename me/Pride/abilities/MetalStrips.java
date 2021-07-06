@@ -61,7 +61,7 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 	private static final String PATH = "ExtraAbilities.Prride.MetalStrips.";
 	private static final FileConfiguration CONFIG = ConfigManager.getConfig();
 	
-	private enum Usage {
+	public enum Usage {
 		ENTITY, BLOCK
 	}
 	
@@ -119,6 +119,8 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		super(player);
 		
 		if (!bPlayer.canBend(this) || !bPlayer.canMetalbend()) return;
+		
+		if (GeneralMethods.isRegionProtectedFromBuild(player, "MetalStrips", player.getLocation())) return;
 		
 		for (ItemStack i : player.getInventory().getContents()) {
 			if (i != null) {
@@ -178,10 +180,12 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		for (Block block : blocks) {
 			if (block == null || isAir(block.getType())) {
 				blocks.remove(block);
+				
+			} else if (block != null) {
+				Location centre = block.getLocation().clone();
+				centre.add(0.5, 0.5, 0.5);
+				spawnMetalParticles(centre, 1, 0.25F);
 			}
-			Location centre = block.getLocation().clone();
-			centre.add(0.5, 0.5, 0.5);
-			spawnMetalParticles(centre, 1, 0.25F);
 		}
 		
 		for (Iterator<Strip> itr = strips.iterator(); itr.hasNext();) {
@@ -230,6 +234,10 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 			if (strip.isStripped()) {
 				stripped = true;
 			}
+			
+			if (strip.regionProtected()) {
+				itr.remove();
+			}
 		}
 		
 		stripents.keySet().stream().filter(e -> validEntities(e) && !armoredEntities(e)).forEach(e -> {
@@ -252,7 +260,15 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		for (LivingEntity e : areas.keySet()) {
 			double size = (e.getEyeLocation().distance(e.getLocation()) / 2 + 0.8D);
 			for (Strip.Area a : areas.get(e)) {
-				spawnMetalParticles(e.getLocation().add(0, a.getY(), 0), 3, (float) (size / 4F));
+				if (!e.isDead() || e.isValid()) {
+					spawnMetalParticles(e.getLocation().add(0, a.getY(), 0), 3, (float) (size / 4F));
+					
+				} else if (e instanceof Player) {
+					Player e_ = (Player) e;
+					if (e_.isOnline()) {
+						spawnMetalParticles(e.getLocation().add(0, a.getY(), 0), 3, (float) (size / 4F));
+					}
+				}
 			}
 		}
 		
@@ -378,8 +394,6 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 	
 	public void magnetize() {
 		if (!stripents.keySet().isEmpty()) {
-			playMetalbendingSound(player.getLocation());
-			
 			if (magnetize) {
 				if (player.isSneaking()) {
 					for (double i = 0; i <= SELECT_ENTITY; i++) {
@@ -437,6 +451,10 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		restricted = true;
 		targetLocation = GeneralMethods.getTargetedLocation(player, SELECT_RANGE);
 		this.magnetize = magnetize;
+	}
+	
+	public void setUsage(Usage usage) {
+		this.usage = usage;
 	}
 
 	@Override
@@ -598,6 +616,10 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		
 		public boolean isStripped() {
 			return stripped;
+		}
+		
+		public boolean regionProtected() {
+			return GeneralMethods.isRegionProtectedFromBuild(player, "MetalStrips", location);
 		}
 		
 		public Location getLocation() {
