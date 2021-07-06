@@ -1,5 +1,6 @@
 # Prides-Earth-Pack-Extravaganza
 A set of 4 earth abilities (for each subelement) and 1 combo!
+Download here: https://projectkorra.com/forum/resources/prrides-earth-pack-extravaganza.436/
 
 ## Bulldoze:
 https://media1.giphy.com/media/6eFtqDId2YP4UV97S5/giphy.gif
