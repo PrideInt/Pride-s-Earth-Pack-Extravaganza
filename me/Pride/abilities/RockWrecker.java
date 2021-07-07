@@ -293,8 +293,8 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 	}
 	
 	private void explosion(Location location) {
-		int size = tempBlocks.size() / 4;
-		for (int i = 0; i < (tempBlocks.size() == 0 ? 1 : tempBlocks.size() / size); i++) {
+		int size = tempBlocks.size() < 1 ? 1 : tempBlocks.size() / 4;
+		for (int i = 0; i < (tempBlocks.size() < 1 ? 1 : tempBlocks.size() / size); i++) {
 			double x = rand.nextDouble() * 3;
 			double z = rand.nextDouble() * 3;
 			double y = rand.nextDouble() * 3;
