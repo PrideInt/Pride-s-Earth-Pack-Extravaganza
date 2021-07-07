@@ -165,7 +165,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		
 		List<Block> blocks = GeneralMethods.getBlocksAroundPoint(location, RADIUS);
 		
-		blocks.stream().filter(b -> isEarthbendable(b) || isEarth(b) || !GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", b.getLocation())).forEach(b -> { 
+		blocks.stream().filter(b -> isEarthbendable(b) || isEarth(b) && !GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", b.getLocation())).forEach(b -> { 
 			if (REVERT) { 
 				new TempBlock(b, Material.AIR.createBlockData(), REVERT_TIME);
 			} else { 
