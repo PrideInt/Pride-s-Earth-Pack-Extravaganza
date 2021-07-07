@@ -32,6 +32,7 @@ import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.util.Collision;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.airbending.AirBlast;
+import com.projectkorra.projectkorra.airbending.AirSwipe;
 import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
 import com.projectkorra.projectkorra.earthbending.EarthBlast;
@@ -96,10 +97,16 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 
 	@Override
 	public Location getLocation() {
+		return null;
+	}
+	
+	@Override
+	public List<Location> getLocations() {
+		List<Location> locations = new ArrayList<>();
 		for (Spike spike : spikes) {
-			return spike.getLocation();
+			locations.add(spike.getLocation());
 		}
-		return location;
+		return locations;
 	}
 
 	@Override
@@ -137,7 +144,7 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 	}
 	
 	private void progressStalagmites() {
-		location.add(direction.normalize().multiply(SPEED));
+		location.add(direction.multiply(SPEED));
 		direction.setY(0);
 		
 		ParticleEffect.BLOCK_CRACK.display(location, 10, 0F, 0F, 0F, 0F, location.getBlock().getRelative(BlockFace.DOWN).getType().createBlockData());
@@ -328,24 +335,25 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 	
 	private void blockAbilities() {
 		// main
-		CoreAbility rw = CoreAbility.getAbility(RockWrecker.class);
+		CoreAbility stal = CoreAbility.getAbility(Stalagmites.class);
 		
 		// small
 		CoreAbility eb = CoreAbility.getAbility(EarthBlast.class),
 					fb = CoreAbility.getAbility(FireBlast.class),
 					ab = CoreAbility.getAbility(AirBlast.class),
+					as = CoreAbility.getAbility(AirSwipe.class),
 					wm = CoreAbility.getAbility(WaterManipulation.class);
 		
-		CoreAbility[] small = {eb, fb, ab, wm};
+		CoreAbility[] small = {eb, fb, ab, as, wm};
 		
 		for (CoreAbility smal : small) {
-			ProjectKorra.getCollisionManager().addCollision(new Collision(rw, smal, false, true));
+			ProjectKorra.getCollisionManager().addCollision(new Collision(stal, smal, false, true));
 		}
 	}
 	
 	@Override
 	public double getCollisionRadius() {
-		return 1.35;
+		return 1.25;
 	}
 	
 	@Override
