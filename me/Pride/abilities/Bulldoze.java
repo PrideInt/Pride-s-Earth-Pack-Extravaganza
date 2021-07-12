@@ -199,6 +199,11 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 	public String getInstructions() {
 		return ChatColor.GOLD + "Hold sneak to select a tunnel range. Release to form the tunnel.";
 	}
+	
+	@Override
+	public boolean isHiddenAbility() {
+		return !ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.Bulldoze.Enabled");
+	}
 
 	@Override
 	public void load() {
@@ -209,6 +214,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		FileConfiguration config = ConfigManager.getConfig();
 		
 		// Bulldoze
+		config.addDefault("ExtraAbilities.Prride.Bulldoze.Enabled", true);
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.Cooldown", 5000);
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.BulldozeSpeed", 1.1);
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.BulldozeRadius", 2.35);
@@ -220,6 +226,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.RevertTime", 30000);
 		
 		// RockWrecker
+		config.addDefault("ExtraAbilities.Prride.RockWrecker.Enabled", true);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.Cooldown", 6000);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.FormTime.Prime", 3000);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.FormTime.Full", 6500);
@@ -234,8 +241,10 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.CreateLavaPool", true);
 		
 		// Stalagmites
+		config.addDefault("ExtraAbilities.Prride.Stalagmites.Enabled", true);
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.Cooldown", 5000);
-		config.addDefault("ExtraAbilities.Prride.Stalagmites.Speed", 1.1);
+		config.addDefault("ExtraAbilities.Prride.Stalagmites.Speed", 1.0);
+		config.addDefault("ExtraAbilities.Prride.Stalagmites.Range", 18);
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.RevertTime", 7000);
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.Knockback", 1.2);
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.MinWidth", 5);
@@ -244,6 +253,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.MaxHeight", 6);
 		
 		// MetalStrips
+		config.addDefault("ExtraAbilities.Prride.MetalStrips.Enabled", true);
 		config.addDefault("ExtraAbilities.Prride.MetalStrips.Cooldown", 12000);
 		config.addDefault("ExtraAbilities.Prride.MetalStrips.Range", 18);
 		config.addDefault("ExtraAbilities.Prride.MetalStrips.Speed", 1.2);
@@ -264,6 +274,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		config.addDefault("ExtraAbilities.Prride.MetalStrips.MetalMaterials", metalMaterials);
 		
 		// SandSurge
+		config.addDefault("ExtraAbilities.Prride.SandSurge.Enabled", true);
 		config.addDefault("ExtraAbilities.Prride.SandSurge.Cooldown", 5000);
 		config.addDefault("ExtraAbilities.Prride.SandSurge.SelectRange", 12);
 		config.addDefault("ExtraAbilities.Prride.SandSurge.SurgeWidth", 6);
