@@ -181,7 +181,7 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 			if (block == null || isAir(block.getType())) {
 				blocks.remove(block);
 				
-			} else if (block != null) {
+			} else {
 				Location centre = block.getLocation().clone();
 				centre.add(0.5, 0.5, 0.5);
 				spawnMetalParticles(centre, 1, 0.25F);
@@ -202,6 +202,8 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 							    tblocks = getBlocks(strip.getBlock().getLocation(), BLOCK_RADIUS * 1.75);
 					
 					for (Block b : blocks) {
+						if (invalidBlocks(b.getType())) continue;
+						
 						this.blocks.add(b);
 					}
 					for (Block tbs : tblocks) {
@@ -396,7 +398,7 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		if (!stripents.keySet().isEmpty()) {
 			if (magnetize) {
 				if (player.isSneaking()) {
-					for (double i = 0; i <= SELECT_ENTITY; i++) {
+					for (double i = 0; i <= SELECT_ENTITY; i += 0.5) {
 						target = GeneralMethods.getTargetedEntity(player, i);
 						
 						if (target != null) {
@@ -445,17 +447,6 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 			}
 		}
 	}
-	
-	public void setMagnetizing(boolean magnetize) {
-		useTarget = false;
-		restricted = true;
-		targetLocation = GeneralMethods.getTargetedLocation(player, SELECT_RANGE);
-		this.magnetize = magnetize;
-	}
-	
-	public void setUsage(Usage usage) {
-		this.usage = usage;
-	}
 
 	@Override
 	public String getAuthor() {
@@ -488,6 +479,11 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 				+ "\n(" + ChatColor.UNDERLINE + "Blocks" + ChatColor.RESET + "" + ChatColor.GOLD + ") "
 				+ "To place blocks under your control, sneak while left clicking to shoot out a strip towards any block "
 				+ "Release sneak as soon as it is bound to destroy the blocks. Currently, the only bending blocks this applies to are EarthSmash blocks.";
+	}
+	
+	@Override
+	public boolean isHiddenAbility() {
+		return !ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.MetalStrips.Enabled");
 	}
 	
 	public static class Strip {
@@ -679,6 +675,24 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		return entity instanceof Zombie || entity instanceof Skeleton || entity instanceof Player || entity instanceof Piglin;
 	}
 	
+	private boolean invalidBlocks(Material material) {
+		switch (material) {
+			case END_PORTAL:
+				return true;
+			case END_PORTAL_FRAME:
+				return true;
+			case NETHER_PORTAL:
+				return true;
+			case BEDROCK:
+				return true;
+			case BARRIER:
+				return true;
+			case COMMAND_BLOCK:
+				return true;
+		}
+		return false;
+	}
+	
 	private boolean hasIronArmor(Material material) {
 		switch (material) {
 			case IRON_CHESTPLATE:
@@ -699,6 +713,49 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 			return true;
 		}
 		return false;
+	}
+	
+	public boolean isMagnetizing() {
+		return magnetize;
+	}
+	
+	public void setMagnetizing(boolean magnetize) {
+		useTarget = false;
+		restricted = true;
+		targetLocation = GeneralMethods.getTargetedLocation(player, SELECT_RANGE);
+		this.magnetize = magnetize;
+	}
+	
+	public Usage getUsage() {
+		return usage;
+	}
+	
+	public void setUsage(Usage usage) {
+		this.usage = usage;
+	}
+	
+	public List<Strip> getMetalStrips() {
+		return strips;
+	}
+	
+	public List<TempBlock> getStrippedTempBlocks() {
+		List<TempBlock> tbs = new ArrayList<>();
+		for (TempBlock tb : tempBlocks) {
+			tbs.add(tb);
+		}
+		return tbs;
+	}
+	
+	public List<Block> getStrippedBlocks() {
+		return blocks;
+	}
+	
+	public List<Entity> getStrippedEntities() {
+		List<Entity> entities = new ArrayList<>();
+		for (Entity e : stripents.keySet()) {
+			entities.add(e);
+		}
+		return entities;
 	}
 	
 	@Override
