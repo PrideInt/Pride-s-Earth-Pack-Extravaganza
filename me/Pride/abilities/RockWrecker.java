@@ -406,6 +406,11 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 				+ "After certain durations of time, the magma will compress and largen into larger blocks. Each form has a different amount "
 				+ "of damage and collision radius.";
 	}
+	
+	@Override
+	public boolean isHiddenAbility() {
+		return !ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.RockWrecker.Enabled");
+	}
 
 	@Override
 	public void load() {
