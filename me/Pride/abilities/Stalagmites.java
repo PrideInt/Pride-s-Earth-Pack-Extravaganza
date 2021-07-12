@@ -55,6 +55,8 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 	private static final long COOLDOWN = CONFIG.getLong(PATH + "Cooldown");
 	@Attribute(Attribute.SPEED)
 	private static final double SPEED = CONFIG.getDouble(PATH + "Speed");
+	@Attribute(Attribute.RANGE)
+	private static final double RANGE = CONFIG.getDouble(PATH + "Range");
 	@Attribute("RevertTime")
 	private static final long REVERT_TIME = CONFIG.getLong(PATH + "RevertTime");
 	@Attribute(Attribute.KNOCKBACK)
@@ -172,7 +174,7 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 
 		if (!TempBlock.isTempBlock(top)) location.setY(top.getY() + 1);
 		
-		if (location.distanceSquared(origin) > 18 * 18) {
+		if (location.distanceSquared(origin) > RANGE * RANGE) {
 			remove();
 			return;
 		}
@@ -210,6 +212,11 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 	@Override
 	public String getInstructions() {
 		return ChatColor.GOLD + "EarthSmash (Tap Shift) > EarthBlast (Left Click Twice)";
+	}
+	
+	@Override
+	public boolean isHiddenAbility() {
+		return !ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.Stalagmites.Enabled");
 	}
 	
 	public class Spike {
