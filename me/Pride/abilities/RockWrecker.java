@@ -61,6 +61,8 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 	private static final int SELECT_RANGE = CONFIG.getInt(PATH + "SelectRange");
 	@Attribute(Attribute.SPEED)
 	private static final double SPEED = CONFIG.getDouble(PATH + "Speed");
+	@Attribute(Attribute.RANGE)
+	private static final double RANGE = CONFIG.getDouble(PATH + "Range");
 	@Attribute(Attribute.DAMAGE)
 	private static final double STARTING_DAMAGE = CONFIG.getDouble(PATH + "Damage.StartingDamage"),
 								PRIME_DAMAGE = CONFIG.getDouble(PATH + "Damage.PrimeDamage"),
@@ -243,22 +245,20 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 		shape(state, location.getBlock(), b -> formRock(b));
 		
 		if (!isTransparent(location.getBlock()) && !TempBlock.isTempBlock(location.getBlock())) {
-			List<Block> blocks = GeneralMethods.getBlocksAroundPoint(location, state.getRadius());
-			if (REVERT) {
-				for (Block b : blocks) {
+			List<Block> blocks = GeneralMethods.getBlocksAroundPoint(location, state.getRadius() * 1.5);
+			blocks.stream().filter(b -> !invalidBlocks(b.getType())).forEach(b -> {
+				if (REVERT) {
 					new TempBlock(b, Material.AIR.createBlockData(), REVERT_TIME);
-				}
-			} else {
-				for (Block b : blocks) {
+				} else {
 					b.setType(Material.AIR);
 				}
-			}
+			});
 			explosion(location);
 			remove();
 			return;
 		}
 		
-		if (location.distanceSquared(target.getLocation()) > 20 * 20) {
+		if (location.distanceSquared(target.getLocation()) > RANGE * RANGE) {
 			remove();
 			return;
 		}
@@ -317,6 +317,24 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 			playEarthbendingSound(location);
 			shape(state, block, b -> player.getWorld().spawnParticle(Particle.REDSTONE, b.getLocation(), 1, 1F, 1F, 1F, 0, new DustOptions(Color.fromRGB(209, 99, 36), 1)));
 		}
+	}
+	
+	private boolean invalidBlocks(Material material) {
+		switch (material) {
+			case END_PORTAL:
+				return true;
+			case END_PORTAL_FRAME:
+				return true;
+			case NETHER_PORTAL:
+				return true;
+			case BEDROCK:
+				return true;
+			case BARRIER:
+				return true;
+			case COMMAND_BLOCK:
+				return true;
+		}
+		return false;
 	}
 	
 	private void blockAbilities(State state) {
