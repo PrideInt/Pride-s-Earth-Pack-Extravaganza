@@ -231,6 +231,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.FormTime.Prime", 3000);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.FormTime.Full", 6500);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.SelectRange", 18);
+		config.addDefault("ExtraAbilities.Prride.RockWrecker.Range", 20);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.Speed", 1.1);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.Damage.StartingDamage", 2);
 		config.addDefault("ExtraAbilities.Prride.RockWrecker.Damage.PrimeDamage", 3);
