@@ -374,11 +374,6 @@ public class SandSurge extends SandAbility implements AddonAbility {
 		return ChatColor.GOLD + "Tap shift at a sand source to form a sand barrier. Left click at any given time before the sand falls to launch "
 				+ "the sand at any given location.";
 	}
-	
-	@Override
-	public boolean isHiddenAbility() {
-		return !ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.SandSurge.Enabled");
-	}
 
 	@Override
 	public void load() {
@@ -388,6 +383,11 @@ public class SandSurge extends SandAbility implements AddonAbility {
 	@Override
 	public void stop() {
 		
+	}
+	
+	@Override
+	public boolean isEnabled() {
+		return ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.SandSurge.Enabled", true);
 	}
 
 }
