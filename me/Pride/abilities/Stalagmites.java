@@ -394,5 +394,10 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 	public void stop() {
 		ProjectKorra.plugin.getServer().getPluginManager().removePermission(perm);
 	}
+	
+	@Override
+	public boolean isEnabled() {
+		return ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.Stalagmites.Enabled", true);
+	}
 
 }
