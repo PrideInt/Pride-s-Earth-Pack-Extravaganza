@@ -481,11 +481,6 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 				+ "Release sneak as soon as it is bound to destroy the blocks. Currently, the only bending blocks this applies to are EarthSmash blocks.";
 	}
 	
-	@Override
-	public boolean isHiddenAbility() {
-		return !ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.MetalStrips.Enabled");
-	}
-	
 	public static class Strip {
 		
 		private boolean stripped;
@@ -784,6 +779,11 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 	@Override
 	public void stop() {
 		
+	}
+	
+	@Override
+	public boolean isEnabled() {
+		return ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.MetalStrips.Enabled", true);
 	}
 
 }
