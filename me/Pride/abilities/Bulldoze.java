@@ -199,11 +199,6 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 	public String getInstructions() {
 		return ChatColor.GOLD + "Hold sneak to select a tunnel range. Release to form the tunnel.";
 	}
-	
-	@Override
-	public boolean isHiddenAbility() {
-		return !ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.Bulldoze.Enabled");
-	}
 
 	@Override
 	public void load() {
@@ -298,6 +293,11 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 			fb.remove();
 		}
 		Loader.fallingBlocks.clear();
+	}
+	
+	@Override
+	public boolean isEnabled() {
+		return ConfigManager.getConfig().getBoolean("ExtraAbilities.Prride.Bulldoze.Enabled", true);
 	}
 
 }
