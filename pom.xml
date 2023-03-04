@@ -27,14 +27,14 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.18.2-R0.1-SNAPSHOT</version>
+            <version>1.19.3-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <!-- ProjectKorra -->
         <dependency>
             <groupId>com.projectkorra</groupId>
             <artifactId>projectkorra</artifactId>
-            <version>1.9.3</version>
+            <version>1.10.2</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

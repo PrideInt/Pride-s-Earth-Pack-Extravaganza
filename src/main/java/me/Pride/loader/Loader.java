@@ -118,11 +118,11 @@ public class Loader extends ElementalAbility implements AddonAbility, Listener {
 	}
 	
 	public static String getAuthor(Element element) {
-		return element.getColor() + "" + ChatColor.UNDERLINE + "Prride";
+		return element.getSubColor().getColor() + "" + ChatColor.UNDERLINE + "Prride";
 	}
 	
 	public static String getVersion(Element element) {
-		return element.getColor() + "" + ChatColor.UNDERLINE + "VERSION 3";
+		return element.getSubColor().getColor() + "" + ChatColor.UNDERLINE + "VERSION 3";
 	}
 	
 	public static String getFallingBlocksKey() {
@@ -173,7 +173,7 @@ public class Loader extends ElementalAbility implements AddonAbility, Listener {
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.MaxRange", 20);
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.RangeIncrement", 0.2);
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.Changeable", false);
-		config.addDefault("ExtraAbilities.Prride.Bulldoze.Revert", true);
+		config.addDefault("ExtraAbilities.Prride.Bulldoze.RevertBlocks", true);
 		config.addDefault("ExtraAbilities.Prride.Bulldoze.RevertTime", 30000);
 		
 		// RockWrecker
@@ -199,9 +199,9 @@ public class Loader extends ElementalAbility implements AddonAbility, Listener {
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.Range", 18);
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.RevertTime", 7000);
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.Knockback", 1.2);
-		config.addDefault("ExtraAbilities.Prride.Stalagmites.MinWidth", 5);
-		config.addDefault("ExtraAbilities.Prride.Stalagmites.MaxWidth", 5);
-		config.addDefault("ExtraAbilities.Prride.Stalagmites.MinHeight", 0);
+		config.addDefault("ExtraAbilities.Prride.Stalagmites.MinWidth", 4);
+		config.addDefault("ExtraAbilities.Prride.Stalagmites.MaxWidth", 4);
+		config.addDefault("ExtraAbilities.Prride.Stalagmites.MinHeight", 4);
 		config.addDefault("ExtraAbilities.Prride.Stalagmites.MaxHeight", 6);
 		
 		// MetalStrips

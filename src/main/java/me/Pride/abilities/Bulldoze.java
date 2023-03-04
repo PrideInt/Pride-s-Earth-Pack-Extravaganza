@@ -1,22 +1,20 @@
 package me.Pride.abilities;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.bukkit.*;
+import com.projectkorra.projectkorra.region.RegionProtection;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.Element;
 import com.projectkorra.projectkorra.GeneralMethods;
-import com.projectkorra.projectkorra.ProjectKorra;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.attribute.Attribute;
@@ -26,30 +24,28 @@ import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.Pride.loader.Loader;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 
 public class Bulldoze extends EarthAbility implements AddonAbility {
 	
-	private static final String PATH = "ExtraAbilities.Prride.Bulldoze.";
-	private static final FileConfiguration CONFIG = ConfigManager.getConfig();
+	private final String path = "ExtraAbilities.Prride.Bulldoze.";
+	private final FileConfiguration config = ConfigManager.getConfig();
 	
 	@Attribute(Attribute.COOLDOWN)
-	private static final long COOLDOWN = CONFIG.getLong(PATH + "Cooldown");
+	private long cooldown;
 	@Attribute(Attribute.SPEED)
-	private static final double SPEED = CONFIG.getDouble(PATH + "BulldozeSpeed");
+	private double speed;
 	@Attribute(Attribute.SELECT_RANGE)
-	private static final double SELECT_RANGE = CONFIG.getDouble(PATH + "SelectRange");
+	private double selectRange;
 	@Attribute(Attribute.RANGE)
-	private static final double MAX_RANGE = CONFIG.getDouble(PATH + "MaxRange");
+	private double maxRange;
 	@Attribute(Attribute.RADIUS)
-	private static final double RADIUS = CONFIG.getDouble(PATH + "BulldozeRadius");
-	private static final boolean REVERT = CONFIG.getBoolean(PATH + "Revert");
+	private double radius;
+	private boolean revert;
 	@Attribute("RevertTime")
-	private static final long REVERT_TIME = CONFIG.getLong(PATH + "RevertTime");
-	private static final boolean CHANGEABLE = CONFIG.getBoolean(PATH + "Changeable");
+	private long revertTime;
+	private boolean changeable;
 
-	private double INCREMENT = CONFIG.getDouble(PATH + "RangeIncrement");
+	private double increment;
 	private double range;
 	private boolean advanced;
 	
@@ -63,15 +59,27 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 	public Bulldoze(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) return;
+		if (!bPlayer.canBend(this)) {
+			return;
+		} else if (RegionProtection.isRegionProtected(player, player.getLocation(), this)) {
+			return;
+		}
+		this.cooldown = config.getLong(path + "Cooldown");
+		this.speed = config.getDouble(path + "BulldozeSpeed");
+		this.selectRange = config.getDouble(path + "SelectRange");
+		this.maxRange = config.getDouble(path + "MaxRange");
+		this.radius = config.getDouble(path + "BulldozeRadius");
+		this.revertTime = config.getLong(path + "RevertTime");
+		this.changeable = config.getBoolean(path + "Changeable");
+		this.increment = config.getDouble(path + "RangeIncrement");
+		this.revert = config.getBoolean(path + "RevertBlocks");
+
+		this.target = getEarthSourceBlock(range);
 		
-		target = getEarthSourceBlock(range);
-		
-		if (target == null) return;
-		
-		if (GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", player.getLocation())) return;
-		
-		location = target.getLocation();
+		if (target == null) {
+			return;
+		}
+		this.location = target.getLocation();
 		
 		playEarthbendingSound(location);
 		
@@ -80,7 +88,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 
 	@Override
 	public long getCooldown() {
-		return COOLDOWN;
+		return cooldown;
 	}
 
 	@Override
@@ -116,24 +124,19 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		}
 		
 		if (player.isSneaking() && !advanced) {
-			target = getEarthSourceBlock(SELECT_RANGE);
+			target = getEarthSourceBlock(selectRange);
 			
 			if (target == null || !isEarthbendable(target)) {
 				remove();
 				return;
+			} else if (target != null && RegionProtection.isRegionProtected(player, target.getLocation(), this)) {
+				remove();
+				return;
 			}
-			
-			if (target != null) {
-				if (GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", target.getLocation())) {
-					remove();
-					return;
-				}
-			}
-			
 			location = target.getLocation();
 			direction = player.getEyeLocation().getDirection();
 			
-			if (range < MAX_RANGE) range += INCREMENT;
+			if (range < maxRange) range += increment;
 			
 			ActionBar.sendActionBar(Element.EARTH.getColor() + "RANGE: " + (int) range, player);
 		}
@@ -146,27 +149,25 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 	private void bulldoze() {
 		advanced = true;
 		
-		if (CHANGEABLE) {
+		if (changeable) {
 			direction = player.getEyeLocation().getDirection();
 		}
+		location.add(direction.normalize().multiply(speed));
 		
-		location.add(direction.normalize().multiply(SPEED));
-		
-		if (GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", location)) {
+		if (RegionProtection.isRegionProtected(player, location, this)) {
 			remove();
 			return;
 		}
-		
 		if (rand.nextInt(4) == 0) {
 			player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5F, 0F);
 			player.getWorld().playSound(location, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 0.5F, 0F);
 		}
 		
-		List<Block> blocks = GeneralMethods.getBlocksAroundPoint(location, RADIUS);
+		List<Block> blocks = GeneralMethods.getBlocksAroundPoint(location, radius);
 		
-		blocks.stream().filter(b -> isEarthbendable(b) || isEarth(b) && !GeneralMethods.isRegionProtectedFromBuild(player, "Bulldoze", b.getLocation())).forEach(b -> { 
-			if (REVERT) { 
-				new TempBlock(b, Material.AIR.createBlockData(), REVERT_TIME);
+		blocks.stream().filter(b -> isEarthbendable(b) || isEarth(b) && !RegionProtection.isRegionProtected(player, b.getLocation(), this)).forEach(b -> {
+			if (revert) {
+				new TempBlock(b, Material.AIR.createBlockData(), revertTime);
 			} else { 
 				b.setType(Material.AIR); 
 			}});

@@ -1,18 +1,17 @@
 package me.Pride.abilities;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.projectkorra.projectkorra.region.RegionProtection;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.FallingBlock;
@@ -74,8 +73,7 @@ public class SandSurge extends SandAbility implements AddonAbility {
 	private long time;
 	
 	private Block target;
-	
-	private List<FallingBlock> fallingBlocks = new CopyOnWriteArrayList<>();
+	private List<FallingBlock> fallingBlocks = new ArrayList<>();
 	
 	public SandSurge(Player player) {
 		super(player);
@@ -84,12 +82,12 @@ public class SandSurge extends SandAbility implements AddonAbility {
 			return;
 		} else if (!bPlayer.canSandbend()) {
 			return;
-		} else if (GeneralMethods.isRegionProtectedFromBuild(this, player.getLocation())) {
+		} else if (RegionProtection.isRegionProtected(player, player.getLocation(), this)) {
 			return;
 		}
 		this.cooldown = ConfigManager.getConfig().getLong(path + "Cooldown");
 		this.select_range = ConfigManager.getConfig().getDouble(path + "SelectRange");
-		this.width = ConfigManager.getConfig().getInt(path + "Width");
+		this.width = ConfigManager.getConfig().getInt(path + "SurgeWidth");
 		this.launch = ConfigManager.getConfig().getDouble(path + "Launch");
 		this.launch_speed = ConfigManager.getConfig().getDouble(path + "LaunchSpeed");
 		this.damage = ConfigManager.getConfig().getDouble(path + "Damage");
@@ -100,8 +98,9 @@ public class SandSurge extends SandAbility implements AddonAbility {
 		
 		this.target = getEarthSourceBlock(this.select_range);
 		
-		if (this.target == null) return;
-		if (GeneralMethods.isRegionProtectedFromBuild(this, this.target.getLocation())) {
+		if (this.target == null) {
+			return;
+		} else if (RegionProtection.isRegionProtected(player, this.target.getLocation(), this)) {
 			return;
 		} else if (!isSandbendable(target)) {
 			return;
@@ -114,18 +113,24 @@ public class SandSurge extends SandAbility implements AddonAbility {
 
 	@Override
 	public void progress() {
-		for (FallingBlock fallingBlock : this.fallingBlocks) {
-			if (ThreadLocalRandom.current().nextInt(3) == 0) {
-				displaySandParticle(fallingBlock.getLocation(), 1, 0.25F, 0.25F, 0.25F, 0F, isRedSand(fallingBlock.getBlockData().getMaterial()));
-			}
-			List<Entity> entities = GeneralMethods.getEntitiesAroundPoint(fallingBlock.getLocation(), 1);
-			entities.stream().filter(e -> e.getUniqueId() != player.getUniqueId() && e instanceof LivingEntity).map(e -> (LivingEntity) e).forEach(e -> {
-				DamageHandler.damageEntity(e, this.damage, this);
-				
-				if (!e.hasPotionEffect(PotionEffectType.BLINDNESS)) {
-					e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, this.blind_duration, this.blind_amplifier));
+		for (Iterator<FallingBlock> itr = fallingBlocks.iterator(); itr.hasNext();) {
+			FallingBlock fallingBlock = itr.next();
+
+			if (fallingBlock.isOnGround()) {
+				itr.remove();
+			} else {
+				if (ThreadLocalRandom.current().nextInt(3) == 0) {
+					displaySandParticle(fallingBlock.getLocation(), 1, 0.25F, 0.25F, 0.25F, 0F, isRedSand(fallingBlock.getBlockData().getMaterial()));
 				}
-			});
+				List<Entity> entities = GeneralMethods.getEntitiesAroundPoint(fallingBlock.getLocation(), 1);
+				entities.stream().filter(e -> e.getUniqueId() != player.getUniqueId() && e instanceof LivingEntity).map(e -> (LivingEntity) e).forEach(e -> {
+					DamageHandler.damageEntity(e, this.damage, this);
+
+					if (!e.hasPotionEffect(PotionEffectType.BLINDNESS)) {
+						e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, this.blind_duration, this.blind_amplifier));
+					}
+				});
+			}
 		}
 		if (this.fallingBlocks.isEmpty()) {
 			remove();
@@ -163,9 +168,9 @@ public class SandSurge extends SandAbility implements AddonAbility {
 			FallingBlock fb = player.getWorld().spawnFallingBlock(location, data);
 			fb.setVelocity(new Vector((x >= 1 ? 0.25 : x), y, (z >= 1 ? 0.25 : z)).normalize().multiply(speed > 0 ? speed : 0.1));
 			fb.setDropItem(false);
-			
-			this.fallingBlocks.add(fb);
+
 			fb.setMetadata(Loader.getFallingBlocksKey(), new FixedMetadataValue(ProjectKorra.plugin, 0));
+			this.fallingBlocks.add(fb);
 		}
 	}
 	
@@ -185,10 +190,7 @@ public class SandSurge extends SandAbility implements AddonAbility {
 	}
 	
 	private boolean isRedSand(Material material) {
-		if (material.name().contains("RED_SAND")) {
-			return true;
-		}
-		return false;
+		return material.name().contains("RED_SAND");
 	}
 	
 	private void blockAbilities() {
@@ -238,7 +240,7 @@ public class SandSurge extends SandAbility implements AddonAbility {
 			Block block = target.getWorld().getBlockAt(target.getLocation().clone().add(orth.clone().multiply(adjustedI)));
 			Block top = GeneralMethods.getTopBlock(block.getLocation(), 3);
 			
-			if (isSandbendable(top) && !GeneralMethods.isRegionProtectedFromBuild(player, "SandSurge", top.getLocation())) {
+			if (isSandbendable(top) && !RegionProtection.isRegionProtected(player, player.getLocation(), this)) {
 				blocks.accept(top);
 			}
 		}
@@ -272,7 +274,7 @@ public class SandSurge extends SandAbility implements AddonAbility {
 	public void throwSurge() {
 		if (this.throwCount < 1) {
 			playEarthbendingSound(player.getLocation());
-			
+
 			for (FallingBlock fallingBlock : this.fallingBlocks) {
 				fallingBlock.setVelocity(player.getEyeLocation().getDirection().multiply(this.throw_speed));
 			}

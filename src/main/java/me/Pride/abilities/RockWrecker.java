@@ -1,14 +1,17 @@
 package me.Pride.abilities;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.projectkorra.projectkorra.region.RegionProtection;
+import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,7 +19,6 @@ import org.bukkit.Particle;
 import org.bukkit.Particle.DustOptions;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -56,9 +58,9 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
 	@Attribute(Attribute.CHARGE_DURATION)
-	private long prime_time, full_time;
+	private long primeTime, fullTime;
 	@Attribute(Attribute.SELECT_RANGE)
-	private int select_range;
+	private int selectRange;
 	@Attribute(Attribute.SPEED)
 	private double speed;
 	@Attribute(Attribute.RANGE)
@@ -67,8 +69,8 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 	private double knockback;
 	private boolean revert;
 	@Attribute("RevertTime")
-	private long revert_time;
-	private boolean create_lava;
+	private long revertTime;
+	private boolean createLava;
 	
 	@Attribute(Attribute.DAMAGE)
 	private static final double STARTING_DAMAGE = ConfigManager.getConfig().getDouble("ExtraAbilities.Prride.RockWrecker.Damage.StartingDamage");
@@ -98,13 +100,15 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 	
 	private int time;
 	private boolean advanced;
-	private int selRange;
+	private int rockRange;
+	private double formLavaTime;
 	
 	private Block target;
 	private Location location;
 	private Vector direction;
 	
 	private Set<TempBlock> tempBlocks = new HashSet<>();
+	private List<Block> lavaBlocks = new ArrayList<>();
 	
 	private State state = State.STARTING;
 
@@ -115,44 +119,41 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 			return;
 		} else if (!bPlayer.canLavabend()) {
 			return;
-		} else if (GeneralMethods.isRegionProtectedFromBuild(this, player.getLocation())) {
+		} else if (RegionProtection.isRegionProtected(player, player.getLocation(), this)) {
 			return;
 		}
 		this.cooldown = ConfigManager.getConfig().getLong(path + "Cooldown");
-		this.prime_time = ConfigManager.getConfig().getLong(path + "FormTime.Prime");
-		this.full_time = ConfigManager.getConfig().getLong(path + "FormTime.Full");
-		this.select_range = ConfigManager.getConfig().getInt(path + "SelectRange");
+		this.primeTime = ConfigManager.getConfig().getLong(path + "FormTime.Prime");
+		this.fullTime = ConfigManager.getConfig().getLong(path + "FormTime.Full");
+		this.selectRange = ConfigManager.getConfig().getInt(path + "SelectRange");
 		this.speed = ConfigManager.getConfig().getDouble(path + "Speed");
 		this.range = ConfigManager.getConfig().getDouble(path + "Range");
 		this.knockback = ConfigManager.getConfig().getDouble(path + "Knockback");
 		this.revert = ConfigManager.getConfig().getBoolean(path + "Revert.Revert");
-		this.revert_time = ConfigManager.getConfig().getLong(path + "Revert.RevertTime");
-		this.create_lava = ConfigManager.getConfig().getBoolean(path + "CreateLavaPool");
+		this.revertTime = ConfigManager.getConfig().getLong(path + "Revert.RevertTime");
+		this.createLava = ConfigManager.getConfig().getBoolean(path + "CreateLavaPool");
 		
-		for (int i = 1; i <= this.select_range; i++) {
-			this.selRange = i;
+		for (int i = 1; i <= this.selectRange; i++) {
+			this.rockRange = i;
 			this.target = getEarthSourceBlock(i);
 			
 			if (target != null && isEarthbendable(target)) {
 				break;
 			}
 		}
-		
-		if (target == null) return;
-		if (GeneralMethods.isRegionProtectedFromBuild(this, target.getLocation())) {
+		if (target == null) {
+			return;
+		} else if (RegionProtection.isRegionProtected(player, target.getLocation(), this)) {
 			return;
 		}
-		
-		if (create_lava) {
+		if (createLava) {
 			GeneralMethods.getBlocksAroundPoint(target.getLocation(), 1.425).stream().filter(b -> !isAir(b.getType()) && isEarthbendable(b)).forEach(b -> {
 				Block block = GeneralMethods.getTopBlock(b.getLocation(), 1, 1);
 				
 				if (isEarthbendable(block) && isTransparent(block.getRelative(BlockFace.UP))) {
-					ParticleEffect.LAVA.display(b.getLocation(), 2);
-					new TempBlock(block, Material.LAVA.createBlockData(), 12000L);
-					
+					lavaBlocks.add(block);
 					if (isPlant(block.getRelative(BlockFace.UP)) && !WaterAbility.isLeaves(block.getRelative(BlockFace.UP))) {
-						new TempBlock(block.getRelative(BlockFace.UP), Material.AIR.createBlockData(), 12000L);
+						lavaBlocks.add(block.getRelative(BlockFace.UP));
 					}
 				}
 			});
@@ -170,19 +171,32 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 			remove();
 			return;
 		}
-		if (time == (int) ((prime_time / 1000) * 20)) {
+		if (createLava && lavaBlocks.size() > 0) {
+			formLavaTime += 0.05;
+
+			if (time > 0.25) {
+				Block block = lavaBlocks.get(ThreadLocalRandom.current().nextInt(lavaBlocks.size()));
+
+				if (isPlant(block)) {
+					new PlantRegrowth(player, block);
+					new TempBlock(block, Material.AIR.createBlockData(), 12000L);
+				} else if (isEarthbendable(block)) {
+					new TempBlock(block, sideIsAir(block) ? Material.MAGMA_BLOCK.createBlockData() : Material.LAVA.createBlockData(), 12000L);
+				}
+				lavaBlocks.remove(block);
+				time = 0;
+			}
+		}
+		if (time == time(primeTime)) {
 			state = State.PRIME;
 			playEffects(target.getLocation(), state, target);
 			
-		} else if (time == (int) ((full_time / 1000) * 20)) {
+		} else if (time == time(fullTime)) {
 			state = State.FULL;
-			playEffects(target.getLocation(), state, target);
-			
-		} else if (time == -1) {
 			playEffects(target.getLocation(), state, target);
 		}
 		if (player.isSneaking() && !advanced) {
-			target = GeneralMethods.getTargetedLocation(player, selRange, true, false).getBlock();
+			target = GeneralMethods.getTargetedLocation(player, rockRange, true, false).getBlock();
 			location = target.getLocation().clone();
 			direction = player.getEyeLocation().getDirection();
 			
@@ -205,12 +219,11 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 	
 	private void throwRock() {
 		if (time > 0) {
+			playEffects(target.getLocation(), state, target);
 			time = -1;
 			--time;
 		}
 		advanced = true;
-		
-		playEffects(target.getLocation(), state, target);
 		
 		location.add(direction.normalize().multiply(this.speed));
 		
@@ -221,7 +234,7 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 			List<Block> blocks = GeneralMethods.getBlocksAroundPoint(location, state.getRadius() * 1.5);
 			blocks.stream().filter(b -> !isIndestructible(b.getType())).forEach(b -> {
 				if (revert) {
-					new TempBlock(b, Material.AIR.createBlockData(), this.revert_time);
+					new TempBlock(b, Material.AIR.createBlockData(), this.revertTime);
 				} else {
 					b.setType(Material.AIR);
 				}
@@ -286,6 +299,10 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 		playEarthbendingSound(location);
 		shape(state, block, b -> player.getWorld().spawnParticle(Particle.REDSTONE, b.getLocation(), 1, 1F, 1F, 1F, 0, new DustOptions(Color.fromRGB(209, 99, 36), 1)));
 	}
+
+	private int time(long time) {
+		return ((int) (time / 1000)) * 20;
+	}
 	
 	private boolean isIndestructible(Material material) {
 		switch (material) {
@@ -296,6 +313,16 @@ public class RockWrecker extends LavaAbility implements AddonAbility {
 			case BARRIER:
 			case COMMAND_BLOCK:
 				return true;
+		}
+		return false;
+	}
+
+	private boolean sideIsAir(Block block) {
+		BlockFace[] faces = { BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST, BlockFace.NORTH_WEST };
+		for (BlockFace face : faces) {
+			if (isAir(block.getRelative(face).getType())) {
+				return true;
+			}
 		}
 		return false;
 	}
