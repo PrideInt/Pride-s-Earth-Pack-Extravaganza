@@ -48,6 +48,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 
+/**
+ * I would not use MetalStrips right now
+ * - Pride
+ */
+
 public class MetalStrips extends MetalAbility implements AddonAbility {
 	
 	protected final String path = "ExtraAbilities.Prride.MetalStrips.";
