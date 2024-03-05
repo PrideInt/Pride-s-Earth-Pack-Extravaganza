@@ -74,7 +74,7 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 		this.increment = config.getDouble(path + "RangeIncrement");
 		this.revert = config.getBoolean(path + "RevertBlocks");
 
-		this.target = getEarthSourceBlock(selectRange);
+		this.target = getEarthSourceBlock(range);
 		
 		if (target == null) {
 			return;
@@ -117,10 +117,12 @@ public class Bulldoze extends EarthAbility implements AddonAbility {
 			remove();
 			return;
 		}
+		
 		if (!bPlayer.canBendIgnoreBindsCooldowns(this)) {
 			remove();
 			return;
 		}
+		
 		if (player.isSneaking() && !advanced) {
 			target = getEarthSourceBlock(selectRange);
 			

@@ -270,7 +270,7 @@ public class Stalagmites extends EarthAbility implements AddonAbility, ComboAbil
 						new TempBlock(this.currentBlock.getRelative(BlockFace.UP), Material.STONE_BRICK_WALL.createBlockData(), this.revert_time);
 					} else if (currentBlock.getType().name().contains("SANDSTONE") && checkName) {
 						new TempBlock(this.currentBlock.getRelative(BlockFace.UP), Material.SANDSTONE_WALL.createBlockData(), this.revert_time);
-					} else if (currentBlock.getType().name().contains("RED_SANDSTONE") && checkName) {
+					} else if (currentBlock.getType().name().contains("RED_SAND") && checkName) {
 						new TempBlock(this.currentBlock.getRelative(BlockFace.UP), Material.RED_SANDSTONE_WALL.createBlockData(), this.revert_time);
 					} else {
 						switch (this.currentBlock.getType()) {

@@ -6,6 +6,7 @@ import java.util.List;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ElementalAbility;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
+import me.Pride.util.TempStrippedEffects;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,7 +14,6 @@ import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -29,7 +29,6 @@ import com.projectkorra.projectkorra.BendingPlayer;
 import com.projectkorra.projectkorra.Element;
 import com.projectkorra.projectkorra.ProjectKorra;
 import com.projectkorra.projectkorra.ability.CoreAbility;
-import com.projectkorra.projectkorra.ability.EarthAbility;
 
 import me.Pride.abilities.Bulldoze;
 import me.Pride.abilities.MetalStrips;
@@ -161,6 +160,7 @@ public class Loader extends ElementalAbility implements AddonAbility, Listener {
 	public void load() {
 		ProjectKorra.log.info(ChatColor.GREEN + "Earth abilities by Prride are loaded in!");
 		ProjectKorra.plugin.getServer().getPluginManager().registerEvents(this, ProjectKorra.plugin);
+		ProjectKorra.plugin.getServer().getScheduler().scheduleSyncRepeatingTask(ProjectKorra.plugin, () -> TempStrippedEffects.handle(), 0, 1);
 		
 		FileConfiguration config = ConfigManager.getConfig();
 		

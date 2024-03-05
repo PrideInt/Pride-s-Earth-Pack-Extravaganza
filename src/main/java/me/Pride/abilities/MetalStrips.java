@@ -7,10 +7,9 @@ import com.projectkorra.projectkorra.ability.MetalAbility;
 import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.command.Commands;
 import com.projectkorra.projectkorra.configuration.ConfigManager;
-import com.projectkorra.projectkorra.util.TempArmor;
 import com.projectkorra.projectkorra.util.TempBlock;
-import com.projectkorra.projectkorra.util.TempPotionEffect;
 import me.Pride.loader.Loader;
+import me.Pride.util.TempStrippedEffects;
 import org.bukkit.Color;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
@@ -22,6 +21,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Giant;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.WitherSkeleton;
@@ -32,6 +32,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 
@@ -82,7 +84,7 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 	private Set<Strip> metalStrips;
 	private List<Entity> strippedEntities;
 	private List<Block> strippedBlocks;
-	public final Map<Entity, MetalArea[]> AREAS = new HashMap<>();
+	public static final Map<Entity, MetalArea[]> AREAS = new ConcurrentHashMap<>();
 	
 	public MetalStrips(Player player) {
 		super(player);
@@ -112,10 +114,15 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 	
 	@Override
 	public void progress() {
+		if (!player.isOnline() || player.isDead()) {
+			remove();
+			return;
+		}
 		for (Iterator<Strip> itr = metalStrips.iterator(); itr.hasNext();) {
 			Strip metalStrip = itr.next();
 			metalStrip.handle();
 			if (metalStrip.cleanup()) {
+				metalStrip.getItem().remove();
 				itr.remove();
 			} else if (metalStrip.hasBlock()) {
 				strippedBlocks.add(metalStrip.getLocation().getBlock());
@@ -131,7 +138,7 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 				if (AREAS.get(entity).length > 0) {
 					for (int i = 0; i < 3; i++) {
 						if (AREAS.get(entity)[i] != null) {
-							player.getWorld().spawnParticle(Particle.REDSTONE, entity.getLocation().clone().add(0, AREAS.get(entity)[i].getY(), 0), 3, size / 4, size / 4, size / 4, 0, new Particle.DustOptions(Color.fromRGB(176, 173, 172), 1));
+							player.getWorld().spawnParticle(Particle.REDSTONE, entity.getLocation().clone().add(0, AREAS.get(entity)[i].getY(), 0), 3, size / 2, size / 2, size / 2, 0, new Particle.DustOptions(Color.fromRGB(176, 173, 172), 1));
 						}
 					}
 				} else {
@@ -146,6 +153,8 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 	
 	private void magnetize() {
 		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(player.getLocation(), this.magnetize_radius)) {
+			if (entity.getUniqueId() == player.getUniqueId() || !AREAS.containsKey(entity)) continue;
+
 			if (AREAS.containsKey(entity)) {
 				if (traceEntity) {
 					if (entity.getUniqueId() == targetEntity.getUniqueId()) continue;
@@ -167,12 +176,14 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		if (!ingot) {
 			Optional<ItemStack> armor = Arrays.stream(player.getInventory().getArmorContents())
 					.filter(i -> {
-						switch (i.getType()) {
-							case IRON_HELMET:
-							case IRON_CHESTPLATE:
-							case IRON_LEGGINGS:
-							case IRON_BOOTS:
-								return true;
+						if (i != null) {
+							switch (i.getType()) {
+								case IRON_HELMET:
+								case IRON_CHESTPLATE:
+								case IRON_LEGGINGS:
+								case IRON_BOOTS:
+									return true;
+							}
 						}
 						return false;
 					})
@@ -197,6 +208,8 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 			}
 		}
 		if (ingot || i_armor) {
+			// player.sendMessage("has ingot or armor");
+			playMetalbendingSound(player.getLocation());
 			metalStrips.add(new Strip(player.getLocation().add(0, 1, 0), player.getEyeLocation().getDirection(), this));
 		}
 	}
@@ -213,24 +226,23 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		if (trace == null) {
 			trace = player.getWorld().rayTraceBlocks(player.getEyeLocation().clone().add(0, 1, 0), player.getEyeLocation().getDirection(), this.select_range, FluidCollisionMode.NEVER, false);
 		}
-		if (trace.getHitEntity() != null) {
+		if (trace != null && trace.getHitEntity() != null) {
 			if (AREAS.containsKey(trace.getHitEntity())) {
 				traceEntity = true;
 				targetEntity = trace.getHitEntity();
 				targetLocation = trace.getHitEntity().getLocation().clone().add(0, 1, 0);
 			}
-		} else {
-			if (trace.getHitBlock() != null) {
-				if (strippedBlocks.contains(trace.getHitBlock())) {
-					player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1F, 1F);
-					traceBlock = true;
-					
-					for (Block block : GeneralMethods.getBlocksAroundPoint(trace.getHitBlock().getLocation().clone().add(0.5, 0.5, 0.5), 1.25)) {
-						if (isIndestructible(block.getType())) continue;
-						
-						new TempBlock(block, Material.AIR.createBlockData(), this.revert_time);
-					}
+		} else if (trace != null && trace.getHitBlock() != null) {
+			if (strippedBlocks.contains(trace.getHitBlock())) {
+				player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 1F, 1F);
+				traceBlock = true;
+
+				for (Block block : GeneralMethods.getBlocksAroundPoint(trace.getHitBlock().getLocation().clone().add(0.5, 0.5, 0.5), 1.25)) {
+					if (isIndestructible(block.getType())) continue;
+
+					new TempBlock(block, Material.AIR.createBlockData(), this.revert_time);
 				}
+				strippedBlocks.remove(trace.getHitBlock());
 			}
 		}
 		if (!traceEntity && !traceBlock) {
@@ -254,6 +266,10 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 	
 	public long getCurrentAbilityTime() {
 		return (getStartTime() + this.duration) - System.currentTimeMillis();
+	}
+
+	public long getAddedTime() {
+		return System.currentTimeMillis() + this.duration;
 	}
 	
 	protected boolean isArmorableEntity(Entity entity) {
@@ -380,6 +396,7 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 		
 		private boolean cleanup;
 		private boolean hasBlock;
+		private ItemDisplay item;
 		
 		Strip(Location origin, Vector direction, MetalStrips metalStrips) {
 			this.origin = origin.clone();
@@ -391,40 +408,44 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 			this.amplifier = 1;
 			
 			this.location = this.origin.clone();
+
+			this.item = player.getWorld().spawn(this.location, ItemDisplay.class);
+			this.item.setItemStack(new ItemStack(Material.RAW_IRON_BLOCK));
+
+			Transformation transformation = this.item.getTransformation();
+			transformation.getScale().set(0.25);
+
+			this.item.setTransformation(transformation);
+			this.item.setMetadata("metalstrip", new FixedMetadataValue(ProjectKorra.plugin, 0));
 		}
 		public void handle() {
-			for (double i = 0; i < this.speed; i += 0.05) {
-				this.location.add(this.direction.multiply(i));
-				
-				Item metalStrip = player.getWorld().dropItem(this.location, new ItemStack(Material.IRON_INGOT, 1));
-				metalStrip.setPickupDelay(61);
-				metalStrip.remove();
-				
-				if (this.location.distanceSquared(this.origin) > this.range * this.range) {
-					this.cleanup = true;
-				}
-				if (GeneralMethods.isRegionProtectedFromBuild(this.metalStrips, this.location)) {
-					this.cleanup = true;
-				}
-				Optional<Entity> entity = GeneralMethods.getEntitiesAroundPoint(this.location, 1)
-						.stream()
-						.filter(e -> e.getUniqueId() != player.getUniqueId())
-						.findFirst();
-				
-				if (entity.isPresent()) {
-					if (entity.get() instanceof Item) {
-						if (!entity.get().hasMetadata(Loader.getItemKey())) {
-							entity.get().setMetadata(Loader.getItemKey(), new FixedMetadataValue(ProjectKorra.plugin, 0));
-						}
-					}
-					trackArea(entity.get());
-					if (!this.cleanup) {
-						this.cleanup = true;
+			this.location.add(this.direction.multiply(this.speed));
+			this.item.teleport(this.location);
+
+			if (this.location.distanceSquared(this.origin) > this.range * this.range) {
+				this.cleanup = true;
+			}
+			if (GeneralMethods.isRegionProtectedFromBuild(this.metalStrips, this.location)) {
+				this.cleanup = true;
+			}
+			Optional<Entity> entity = GeneralMethods.getEntitiesAroundPoint(this.location, 1)
+					.stream()
+					.filter(e -> e.getUniqueId() != player.getUniqueId() && !e.hasMetadata("metalstrip"))
+					.findFirst();
+
+			if (entity.isPresent()) {
+				if (entity.get() instanceof Item) {
+					if (!entity.get().hasMetadata(Loader.getItemKey())) {
+						entity.get().setMetadata(Loader.getItemKey(), new FixedMetadataValue(ProjectKorra.plugin, 0));
 					}
 				}
-				if (!GeneralMethods.isTransparent(this.location.getBlock())) {
-					this.hasBlock = true;
+				trackArea(entity.get());
+				if (!this.cleanup) {
+					this.cleanup = true;
 				}
+			}
+			if (!GeneralMethods.isTransparent(this.location.getBlock())) {
+				this.hasBlock = true;
 			}
 		}
 		private void trackArea(Entity entity) {
@@ -444,11 +465,12 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 					if (!AREAS.containsKey(entity)) {
 						AREAS.put(entity, new MetalArea[0]);
 					}
+					new TempStrippedEffects(entity, metalStrips.duration, new PotionEffect(PotionEffectType.SLOW, 30, this.amplifier), this.metalStrips);
 				}
 			}
 		}
 		private void bindMetal(Entity entity, double head, double chest, double legs, double feet) {
-			MetalArea area = MetalArea.NONE;
+			MetalArea area;
 			if (this.location.getY() <= getEntityYVal(entity, head) && this.location.getY() >= getEntityYVal(entity, chest)) {
 				area = MetalArea.HEAD;
 			} else if (this.location.getY() < getEntityYVal(entity, chest) && this.location.getY() >= getEntityYVal(entity, legs)) {
@@ -457,28 +479,33 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 				area = MetalArea.LEGS;
 			} else if (this.location.getY() < getEntityYVal(entity, feet) && this.location.getY() >= getEntityYVal(entity, 0)) {
 				area = MetalArea.FEET;
+			} else {
+				area = MetalArea.NONE;
 			}
 			int idx = -1;
+			switch (area) {
+				case NONE: break;
+				case HEAD: idx = 3; break;
+				case CHEST: idx = 2; break;
+				case LEGS: idx = 1; break;
+				case FEET: idx = 0; break;
+			}
 			if (isArmorableEntity(entity)) {
 				ItemStack[] armor = new ItemStack[4];
-				int duration = (int) ((getCurrentAbilityTime() / 1000) / 0.05);
-				
-				switch (area) {
-					case NONE: break;
-					case HEAD: idx = 3; break;
-					case CHEST: idx = 2; break;
-					case LEGS: idx = 1; break;
-					case FEET: idx = 0; break;
-				}
+
 				final int finalIdx = idx;
 				applyArmor(idx, (i, p) -> {
 					armor[finalIdx] = i;
-					new TempPotionEffect((LivingEntity) entity, new PotionEffect(p, duration, this.amplifier));
-					/*if (TempArmor.getTempArmorList((LivingEntity) entity).get(finalIdx) == null) {
-						new TempArmor((LivingEntity) entity, getCurrentAbilityTime(), this.metalStrips, armor);
-					}*/
-					new TempArmor((LivingEntity) entity, getCurrentAbilityTime(), this.metalStrips, armor);
+					new TempStrippedEffects(entity, metalStrips.duration, armor, new PotionEffect(p, 30, this.amplifier), area, this.metalStrips);
 				});
+			} else {
+				switch (idx) {
+					case 3: new TempStrippedEffects(entity, metalStrips.duration, new PotionEffect(PotionEffectType.BLINDNESS, 30, this.amplifier), this.metalStrips); break;
+					case 2: new TempStrippedEffects(entity, metalStrips.duration, new PotionEffect(PotionEffectType.SLOW_DIGGING, 30, this.amplifier), this.metalStrips); break;
+					case 1:
+					case 0:
+						new TempStrippedEffects(entity, metalStrips.duration, new PotionEffect(PotionEffectType.SLOW, 30, this.amplifier), this.metalStrips); break;
+				}
 			}
 			if (AREAS.containsKey(entity)) {
 				if (AREAS.get(entity).length > 0) {
@@ -504,7 +531,9 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 			return entity.getLocation().clone().add(0, offset, 0).getY();
 		}
 		public Location getLocation() { return this.location; }
+		public ItemDisplay getItem() { return this.item; }
 		public boolean hasBlock() { return this.hasBlock; }
 		public boolean cleanup() { return this.cleanup; }
 	}
 }
+
