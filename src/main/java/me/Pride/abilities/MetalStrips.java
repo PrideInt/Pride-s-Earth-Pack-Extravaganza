@@ -207,8 +207,13 @@ public class MetalStrips extends MetalAbility implements AddonAbility {
 					damageable.setDamage(damageable.getDamage() + this.armor_decrease);
 					
 					armor.get().setItemMeta(meta);
-					
-					playMetalbendingSound(player.getLocation());
+				}
+			}
+		} else {
+			for (ItemStack item : player.getInventory().getContents()) {
+				if (item != null && (item.getType() == Material.IRON_INGOT || item.getType() == Material.IRON_NUGGET) && item.getAmount() > 0) {
+					item.setAmount(item.getAmount() - 1);
+					break;
 				}
 			}
 		}
