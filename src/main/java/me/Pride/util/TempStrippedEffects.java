@@ -45,11 +45,11 @@ public class TempStrippedEffects {
 	}
 
 	public static void handle() {
-		MetalStrips.AREAS.keySet().forEach(entity -> {
-			if (MetalStrips.AREAS.get(entity).length != 0) {
+		MetalStrips.METAL_CAPTURES.keySet().forEach(entity -> {
+			if (MetalStrips.METAL_CAPTURES.get(entity).length != 0) {
 				if (entity instanceof LivingEntity) {
 					if (TempArmor.getTempArmorList((LivingEntity) entity).size() == 0) {
-						MetalStrips.AREAS.remove(entity);
+						MetalStrips.METAL_CAPTURES.remove(entity);
 					}
 				}
 			}
@@ -57,10 +57,11 @@ public class TempStrippedEffects {
 
 		for (Iterator<TempStrippedEffects> itr = EFFECTS.iterator(); itr.hasNext(); ) {
 			TempStrippedEffects effect = itr.next();
-			Map<Entity, MetalStrips.MetalArea[]> areas = MetalStrips.AREAS;
+			Map<Entity, MetalStrips.MetalArea[]> areas = MetalStrips.METAL_CAPTURES;
 
 			if (areas.get(effect.getEntity()) != null && areas.get(effect.getEntity()).length == 0) {
 				if (System.currentTimeMillis() > effect.getStartTime() + effect.getDuration()) {
+					MetalStrips.METAL_CAPTURES.remove(effect.getEntity());
 					areas.remove(effect.getEntity());
 					itr.remove();
 				}
@@ -74,6 +75,7 @@ public class TempStrippedEffects {
 								}
 							}
 						}
+						MetalStrips.METAL_CAPTURES.remove(effect.getEntity());
 						itr.remove();
 					}
 				}
